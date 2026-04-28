@@ -6,155 +6,68 @@
 <title>QR LinkVault</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #060810; --surface: #0d1117;
-    --border: rgba(0,220,150,0.18); --accent: #00dc96;
-    --accent2: #00aaff; --text: #dde6ef;
-    --muted: #4a5568; --danger: #ff4d6d; --radius: 12px;
-  }
-  body {
-    background: var(--bg); font-family: 'Space Mono', monospace;
-    color: var(--text); min-height: 100vh; overflow-x: hidden;
-  }
-  body::before {
-    content: ''; position: fixed; inset: 0; z-index: 0;
-    background-image:
-      linear-gradient(rgba(0,220,150,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,220,150,0.025) 1px, transparent 1px);
-    background-size: 36px 36px; pointer-events: none;
-  }
-  .app { max-width: 480px; margin: 0 auto; padding: 28px 16px 100px; position: relative; z-index: 1; }
-  .header { text-align: center; margin-bottom: 32px; }
-  .header-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 4px; }
-  .header-logo svg { color: var(--accent); }
-  .header h1 {
-    font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em;
-  }
-  .header-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 4px; }
-  .tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 4px; margin-bottom: 24px; }
-  .tab {
-    flex: 1; padding: 9px 4px; border: none; background: transparent;
-    color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 700;
-    border-radius: 7px; cursor: pointer; transition: all 0.2s;
-    letter-spacing: 0.05em; text-transform: uppercase;
-  }
-  .tab.active { background: var(--accent); color: #000; }
-  .scanner-wrap {
-    position: relative; border-radius: var(--radius); overflow: hidden;
-    border: 1px solid var(--border); background: #000;
-    aspect-ratio: 1 / 1; margin-bottom: 16px;
-  }
-  #video { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .scanner-overlay {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    pointer-events: none;
-  }
-  .scan-frame { width: 58%; aspect-ratio: 1/1; position: relative; }
-  .scan-frame::before, .scan-frame::after,
-  .scan-frame span::before, .scan-frame span::after {
-    content: ''; position: absolute; width: 22px; height: 22px;
-    border-color: var(--accent); border-style: solid;
-  }
-  .scan-frame::before  { top: 0;    left: 0;  border-width: 3px 0 0 3px; }
-  .scan-frame::after   { top: 0;    right: 0; border-width: 3px 3px 0 0; }
-  .scan-frame span::before { bottom: 0; left: 0;  border-width: 0 0 3px 3px; }
-  .scan-frame span::after  { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
-  .scan-line {
-    position: absolute; left: 10%; right: 10%; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    animation: scanMove 2s ease-in-out infinite; box-shadow: 0 0 8px var(--accent);
-  }
-  @keyframes scanMove { 0% { top: 10%; } 50% { top: 88%; } 100% { top: 10%; } }
-  .scanner-placeholder {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 12px; color: var(--muted); font-size: 13px; background: rgba(0,0,0,0.85);
-  }
-  .btn {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 14px; border: none; border-radius: var(--radius);
-    font-family: inherit; font-size: 13px; font-weight: 700;
-    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.18s;
-  }
-  .btn-primary { background: var(--accent); color: #000; }
-  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-  .btn-stop { background: var(--danger); color: #fff; }
-  .toast {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    padding: 10px 22px; border-radius: 40px; font-size: 13px; font-weight: 700;
-    letter-spacing: 0.06em; z-index: 999; white-space: nowrap;
-    animation: toastIn 0.25s ease; pointer-events: none;
-  }
-  .toast-success { background: var(--accent); color: #000; }
-  .toast-error   { background: var(--danger); color: #fff; }
-  .toast-info    { background: var(--accent2); color: #fff; }
-  @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(-8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
-  .last-scan {
-    padding: 12px 14px; background: rgba(0,220,150,0.07);
-    border: 1px solid rgba(0,220,150,0.25); border-radius: var(--radius);
-    margin-bottom: 14px; font-size: 12px;
-  }
-  .last-scan-label { color: var(--accent); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; }
-  .last-scan-url { color: var(--text); word-break: break-all; line-height: 1.5; }
-  .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .list-count { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
-  .link-card {
-    background: rgba(255,255,255,0.025); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
-    transition: border-color 0.2s; animation: cardIn 0.3s ease;
-  }
-  .link-card:hover { border-color: rgba(0,220,150,0.4); }
-  @keyframes cardIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: none; } }
-  .card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
-  .card-favicon { width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0; margin-top: 1px; background: rgba(255,255,255,0.06); }
-  .card-url { font-size: 12px; word-break: break-all; line-height: 1.55; flex: 1; color: var(--text); }
-  .card-url a { color: var(--accent2); text-decoration: none; }
-  .card-url a:hover { text-decoration: underline; }
-  .card-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
-  .card-date { font-size: 10px; color: var(--muted); }
-  .card-actions { display: flex; gap: 6px; }
-  .icon-btn {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 6px; padding: 5px 7px; cursor: pointer; color: var(--muted);
-    font-size: 11px; display: flex; align-items: center; gap: 4px;
-    font-family: inherit; transition: all 0.15s;
-  }
-  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .icon-btn.del:hover { border-color: var(--danger); color: var(--danger); }
-  .empty {
-    text-align: center; color: var(--muted); font-size: 13px;
-    padding: 48px 20px; border: 1px dashed rgba(255,255,255,0.06);
-    border-radius: var(--radius); line-height: 2;
-  }
-  .export-btn {
-    position: fixed; bottom: 24px; right: 20px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #000; border: none; border-radius: 40px; padding: 12px 20px;
-    font-family: inherit; font-size: 12px; font-weight: 700;
-    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0,220,150,0.3);
-    display: flex; align-items: center; gap: 8px; z-index: 100; transition: all 0.2s;
-  }
-  .export-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,220,150,0.4); }
-  .badge {
-    background: var(--accent); color: #000; border-radius: 20px;
-    padding: 1px 8px; font-size: 11px; font-weight: 700; margin-left: 6px;
-  }
-  .status-bar {
-    font-size: 11px; color: var(--muted); text-align: center;
-    margin-top: 10px; min-height: 16px; letter-spacing: 0.05em;
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060810;--border:rgba(0,220,150,0.18);--accent:#00dc96;--accent2:#00aaff;--text:#dde6ef;--muted:#4a5568;--danger:#ff4d6d;--radius:12px}
+body{background:var(--bg);font-family:'Space Mono',monospace;color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,220,150,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,220,150,0.025) 1px,transparent 1px);background-size:36px 36px;pointer-events:none}
+.app{max-width:480px;margin:0 auto;padding:28px 16px 100px;position:relative;z-index:1}
+.header{text-align:center;margin-bottom:28px}
+.header-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px}
+.header h1{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-sub{font-size:11px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,.04);border-radius:10px;padding:4px;margin-bottom:24px}
+.tab{flex:1;padding:9px 4px;border:none;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.tab.active{background:var(--accent);color:#000}
+/* O html5-qrcode cria o elemento internamente, então controlamos via wrapper */
+#reader-wrap{border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:#000;margin-bottom:16px;min-height:300px;position:relative}
+#reader{width:100%}
+/* Remove branding e botões desnecessários do html5-qrcode */
+#reader__header_message{display:none!important}
+#reader__dashboard_section_csr span{display:none}
+#reader__status_span{font-family:'Space Mono',monospace!important;font-size:12px!important;color:var(--accent)!important}
+#reader__camera_selection{background:#111;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:12px;width:100%}
+#reader__camera_permission_button{background:var(--accent)!important;color:#000!important;border:none!important;border-radius:8px!important;padding:10px 20px!important;font-family:inherit!important;font-weight:700!important;cursor:pointer!important}
+.placeholder-box{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(0,0,0,.9);font-size:12px;color:var(--muted);text-align:center;padding:20px;border-radius:var(--radius)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:none;border-radius:var(--radius);font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .18s}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:active{filter:brightness(.9)}
+.btn-stop{background:var(--danger);color:#fff}
+.status{font-size:11px;color:var(--muted);text-align:center;margin-top:10px;min-height:18px}
+.last-scan{padding:12px 14px;background:rgba(0,220,150,.07);border:1px solid rgba(0,220,150,.25);border-radius:var(--radius);margin-bottom:14px;font-size:12px}
+.last-scan-label{color:var(--accent);font-size:10px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
+.last-scan-url{color:var(--text);word-break:break-all;line-height:1.6}
+.list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.list-count{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.link-card{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;transition:border-color .2s;animation:cIn .3s ease}
+@keyframes cIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.link-card:hover{border-color:rgba(0,220,150,.4)}
+.card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.card-favicon{width:20px;height:20px;border-radius:4px;flex-shrink:0;margin-top:1px}
+.card-url{font-size:12px;word-break:break-all;line-height:1.55;flex:1}
+.card-url a{color:var(--accent2);text-decoration:none}
+.card-url a:hover{text-decoration:underline}
+.card-meta{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.card-date{font-size:10px;color:var(--muted)}
+.card-actions{display:flex;gap:6px}
+.icon-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--muted);font-size:11px;font-family:inherit;transition:all .15s}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.icon-btn.del:hover{border-color:var(--danger);color:var(--danger)}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:48px 20px;border:1px dashed rgba(255,255,255,.06);border-radius:var(--radius);line-height:2}
+.export-btn{position:fixed;bottom:24px;right:20px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;border:none;border-radius:40px;padding:12px 20px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(0,220,150,.3);display:flex;align-items:center;gap:8px;z-index:100;transition:all .2s}
+.badge{background:var(--accent);color:#000;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:40px;font-size:13px;font-weight:700;z-index:9999;white-space:nowrap;pointer-events:none;animation:tIn .25s ease}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.toast-success{background:var(--accent);color:#000}
+.toast-error{background:var(--danger);color:#fff}
+.toast-info{background:var(--accent2);color:#fff}
 </style>
 </head>
 <body>
 <div class="app">
+
   <div class="header">
     <div class="header-logo">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00dc96" stroke-width="2.2">
         <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
         <rect x="3" y="14" width="7" height="7" rx="1"/>
         <path d="M14 14h3v3"/><path d="M17 14v7h-3"/><path d="M21 14v7"/>
@@ -169,20 +82,17 @@
     <button class="tab" onclick="switchTab('list')" id="tab-list">🔗 Meus Links <span class="badge" id="badge">0</span></button>
   </div>
 
+  <!-- SCAN TAB -->
   <div id="pane-scan">
-    <div class="scanner-wrap" id="scannerWrap">
-      <video id="video" playsinline muted></video>
-      <canvas id="canvas" style="display:none"></canvas>
-      <div class="scanner-overlay" id="overlay" style="display:none">
-        <div class="scan-frame"><span></span><div class="scan-line"></div></div>
-      </div>
-      <div class="scanner-placeholder" id="placeholder">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
+    <div id="reader-wrap">
+      <div id="reader"></div>
+      <div class="placeholder-box" id="placeholderBox">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.3">
           <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
           <rect x="3" y="14" width="7" height="7" rx="1"/>
           <path d="M14 14h3v3"/><path d="M17 14v7h-3"/><path d="M21 14v7"/>
         </svg>
-        <span>Câmera desligada</span>
+        <span id="placeholderMsg">Câmera desligada</span>
       </div>
     </div>
 
@@ -191,251 +101,209 @@
       <div class="last-scan-url" id="lastScanUrl"></div>
     </div>
 
-    <button class="btn btn-primary" id="btnCamera" onclick="toggleCamera()">
-      📷 Abrir Câmera
-    </button>
-    <div class="status-bar" id="statusBar"></div>
+    <button class="btn btn-primary" id="btnCamera" onclick="toggleCamera()">📷 Abrir Câmera</button>
+    <div class="status" id="statusMsg"></div>
   </div>
 
+  <!-- LIST TAB -->
   <div id="pane-list" style="display:none">
     <div class="list-header">
       <span class="list-count" id="listCount">0 links salvos</span>
-      <button class="icon-btn" onclick="clearAll()" style="color:#ff4d6d;border-color:rgba(255,77,109,0.2)">🗑 Limpar tudo</button>
+      <button class="icon-btn del" onclick="clearAll()">🗑 Limpar tudo</button>
     </div>
     <div id="linkList"></div>
   </div>
+
 </div>
 
-<button class="export-btn" onclick="exportLinks()" id="exportBtn" style="display:none">⬇ Exportar lista</button>
+<button class="export-btn" id="exportBtn" style="display:none" onclick="exportLinks()">⬇ Exportar</button>
 <div id="toastEl" class="toast" style="display:none"></div>
 
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-const STORAGE_KEY = 'qr-linkvault-v1';
+const STORAGE_KEY = 'qr-linkvault-v2';
 let links = [];
+let html5QrCode = null;
 let scanning = false;
-let stream = null;
-let tickTimer = null;
 let cooldown = false;
-let lastScanned = '';
+let lastUrl = '';
 
 // ── Storage ──────────────────────────────────────────────
-function loadLinks() {
+function load() {
   try { links = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { links = []; }
-  refreshUI();
+  render();
 }
-function saveLinks() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
-  refreshUI();
-}
+function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(links)); render(); }
 
-// ── UI ───────────────────────────────────────────────────
-function refreshUI() {
+// ── Render ───────────────────────────────────────────────
+function render() {
   document.getElementById('badge').textContent = links.length;
-  document.getElementById('listCount').textContent = links.length + ' link' + (links.length !== 1 ? 's' : '') + ' salvo' + (links.length !== 1 ? 's' : '');
-  document.getElementById('exportBtn').style.display = links.length > 0 ? 'flex' : 'none';
-  renderList();
-}
-function setStatus(msg) { document.getElementById('statusBar').textContent = msg; }
-function setPlaceholder(msg, isError) {
-  const ph = document.getElementById('placeholder');
-  ph.innerHTML = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3"/><path d="M17 14v7h-3"/><path d="M21 14v7"/></svg><span style="color:${isError?'#ff4d6d':'var(--muted)'};font-size:12px;text-align:center;padding:0 20px;line-height:1.8">${msg}</span>`;
-  ph.style.display = 'flex';
-}
-function renderList() {
+  document.getElementById('listCount').textContent =
+    links.length + ' link' + (links.length !== 1 ? 's' : '') + ' salvo' + (links.length !== 1 ? 's' : '');
+  document.getElementById('exportBtn').style.display = links.length ? 'flex' : 'none';
   const el = document.getElementById('linkList');
-  if (!links.length) { el.innerHTML = '<div class="empty">Nenhum link ainda.<br>Escaneie um QR Code na aba Scanner.</div>'; return; }
+  if (!links.length) {
+    el.innerHTML = '<div class="empty">Nenhum link ainda.<br>Escaneie um QR Code na aba Scanner.</div>';
+    return;
+  }
   el.innerHTML = links.map(l => `
     <div class="link-card">
       <div class="card-top">
-        <img class="card-favicon" src="https://www.google.com/s2/favicons?domain=${getDomain(l.url)}&sz=32" onerror="this.style.display='none'"/>
-        <div class="card-url"><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.url)}</a></div>
+        <img class="card-favicon" src="https://www.google.com/s2/favicons?domain=${dom(l.url)}&sz=32" onerror="this.style.display='none'"/>
+        <div class="card-url"><a href="${xe(l.url)}" target="_blank" rel="noopener">${xe(l.url)}</a></div>
       </div>
       <div class="card-meta">
-        <span class="card-date">${formatDate(l.ts)}</span>
+        <span class="card-date">${fmt(l.ts)}</span>
         <div class="card-actions">
-          <button class="icon-btn" onclick="copyLink('${esc(l.url)}', this)">📋 Copiar</button>
-          <button class="icon-btn del" onclick="deleteLink(${l.id})">✕</button>
+          <button class="icon-btn" onclick="copyLink('${xe(l.url)}',this)">📋 Copiar</button>
+          <button class="icon-btn del" onclick="delLink(${l.id})">✕</button>
         </div>
       </div>
     </div>`).join('');
 }
-function getDomain(url) { try { return new URL(url).hostname; } catch { return ''; } }
-function formatDate(ts) { return new Date(ts).toLocaleString('pt-BR', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function switchTab(tab) {
-  ['scan','list'].forEach(t => {
-    document.getElementById('pane-'+t).style.display = t===tab?'block':'none';
-    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+function dom(u) { try { return new URL(u).hostname; } catch { return ''; } }
+function fmt(ts) { return new Date(ts).toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+function xe(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Tabs ─────────────────────────────────────────────────
+function switchTab(t) {
+  ['scan','list'].forEach(k => {
+    document.getElementById('pane-'+k).style.display = k===t?'block':'none';
+    document.getElementById('tab-'+k).classList.toggle('active', k===t);
   });
 }
 
-// ── Camera ───────────────────────────────────────────────
+// ── Scanner ───────────────────────────────────────────────
 async function toggleCamera() {
-  if (scanning) { stopCamera(); return; }
-  await startCamera();
+  if (scanning) { await stopScanner(); return; }
+  await startScanner();
 }
 
-async function startCamera() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    setPlaceholder(location.protocol==='file:'
-      ? '⚠️ Protocolo file:// bloqueado pelo Chrome.<br>Acesse via https:// ou localhost.'
-      : '❌ Câmera não suportada neste navegador.', true);
-    return;
-  }
-  setPlaceholder('Aguardando permissão da câmera...', false);
+async function startScanner() {
+  setPlaceholder('Iniciando câmera...', false);
   setStatus('');
-  try {
-    // Tenta câmera traseira primeiro, depois qualquer uma
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: 'environment' } } });
-    } catch {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      } catch {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      }
-    }
-    const video = document.getElementById('video');
-    video.srcObject = stream;
-    video.setAttribute('playsinline', true);
-    await new Promise(res => { video.onloadedmetadata = res; setTimeout(res, 3000); });
-    try { await video.play(); } catch(e) { console.warn('play():', e); }
 
+  html5QrCode = new Html5Qrcode('reader', { verbose: false });
+
+  const config = {
+    fps: 10,
+    qrbox: function(w, h) {
+      const size = Math.min(w, h) * 0.7;
+      return { width: size, height: size };
+    },
+    aspectRatio: 1.0,
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+  };
+
+  try {
+    await html5QrCode.start(
+      { facingMode: 'environment' },
+      config,
+      onScanSuccess,
+      () => {} // falha silenciosa por frame
+    );
     scanning = true;
-    document.getElementById('placeholder').style.display = 'none';
-    document.getElementById('overlay').style.display = 'flex';
+    document.getElementById('placeholderBox').style.display = 'none';
     document.getElementById('btnCamera').className = 'btn btn-stop';
     document.getElementById('btnCamera').innerHTML = '⏹ Parar Câmera';
     setStatus('🔍 Aponte para o QR Code...');
-    scheduleTick();
   } catch(e) {
-    let msg = '❌ Erro ao acessar câmera.';
-    if (e.name === 'NotAllowedError')   msg = '🚫 Permissão negada.<br>Libere a câmera nas configurações do Chrome.';
-    else if (e.name === 'NotFoundError') msg = '📷 Nenhuma câmera encontrada.';
-    else if (e.name === 'NotReadableError') msg = '⚠️ Câmera em uso por outro app.';
+    let msg = '❌ Não foi possível acessar a câmera.';
+    const s = String(e).toLowerCase();
+    if (s.includes('permission') || s.includes('denied') || s.includes('notallowed')) {
+      msg = '🚫 Permissão negada.<br>Toque no 🔒 na barra de endereço e libere a câmera.';
+    } else if (s.includes('notfound') || s.includes('no camera')) {
+      msg = '📷 Nenhuma câmera encontrada.';
+    } else if (s.includes('notreadable') || s.includes('busy')) {
+      msg = '⚠️ Câmera em uso por outro app.';
+    }
     setPlaceholder(msg, true);
-    console.error('Camera:', e.name, e.message);
+    html5QrCode = null;
+    console.error('startScanner:', e);
   }
 }
 
-function stopCamera() {
+async function stopScanner() {
+  if (html5QrCode) {
+    try { await html5QrCode.stop(); } catch {}
+    try { html5QrCode.clear(); } catch {}
+    html5QrCode = null;
+  }
   scanning = false;
-  clearTimeout(tickTimer);
-  if (stream) stream.getTracks().forEach(t => t.stop());
-  stream = null;
-  const video = document.getElementById('video');
-  video.srcObject = null;
-  document.getElementById('placeholder').innerHTML = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3"/><path d="M17 14v7h-3"/><path d="M21 14v7"/></svg><span>Câmera desligada</span>`;
-  document.getElementById('placeholder').style.display = 'flex';
-  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('reader').innerHTML = '';
+  document.getElementById('placeholderBox').style.display = 'flex';
+  document.getElementById('placeholderMsg').innerHTML = 'Câmera desligada';
+  document.getElementById('placeholderMsg').style.color = 'var(--muted)';
   document.getElementById('btnCamera').className = 'btn btn-primary';
   document.getElementById('btnCamera').innerHTML = '📷 Abrir Câmera';
   setStatus('');
 }
 
-// ── QR Decode via ZXing (importado via esm.sh) ───────────
-let zxingReader = null;
-async function getZxing() {
-  if (zxingReader) return zxingReader;
-  const { BrowserMultiFormatReader } = await import('https://esm.sh/@zxing/library@0.20.0');
-  zxingReader = new BrowserMultiFormatReader();
-  return zxingReader;
-}
-
-function scheduleTick() {
-  tickTimer = setTimeout(tick, 250); // a cada 250ms
-}
-
-async function tick() {
-  if (!scanning) return;
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  if (video.readyState < 2 || video.videoWidth === 0) { scheduleTick(); return; }
-
-  canvas.width  = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0);
-
-  try {
-    const reader = await getZxing();
-    // Decodifica via imageData
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const luminance = new Uint8ClampedArray(imageData.width * imageData.height);
-    for (let i = 0; i < luminance.length; i++) {
-      const j = i * 4;
-      luminance[i] = (imageData.data[j] * 299 + imageData.data[j+1] * 587 + imageData.data[j+2] * 114) / 1000;
-    }
-    // Usa a API interna do ZXing para decodificar luminance source
-    const { RGBLuminanceSource, BinaryBitmap, HybridBinarizer, MultiFormatReader, DecodeHintType, BarcodeFormat } = await import('https://esm.sh/@zxing/library@0.20.0');
-    const lumSource = new RGBLuminanceSource(luminance, canvas.width, canvas.height);
-    const binaryBitmap = new BinaryBitmap(new HybridBinarizer(lumSource));
-    const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.QR_CODE]);
-    hints.set(DecodeHintType.TRY_HARDER, true);
-    const mfReader = new MultiFormatReader();
-    mfReader.setHints(hints);
-    const result = mfReader.decode(binaryBitmap);
-    if (result && result.getText()) {
-      onQRDetected(result.getText());
-    }
-  } catch(e) {
-    // NotFoundException é normal quando não tem QR na tela — ignora silenciosamente
-  }
-  scheduleTick();
-}
-
-function onQRDetected(data) {
+function onScanSuccess(decodedText) {
   if (cooldown) return;
-  let url = data.trim();
+  let url = (decodedText || '').trim();
+
   if (!/^https?:\/\//i.test(url)) {
     if (/\.\w{2,}/.test(url)) url = 'https://' + url;
-    else { setStatus('⚠️ QR não contém URL'); return; }
+    else { setStatus('⚠️ QR sem URL: ' + url.substring(0,40)); return; }
   }
-  if (url === lastScanned) return;
-  lastScanned = url; cooldown = true;
-  setTimeout(() => { cooldown = false; lastScanned = ''; }, 3000);
+  if (url === lastUrl) return;
+
+  lastUrl = url;
+  cooldown = true;
+  setTimeout(() => { cooldown = false; lastUrl = ''; }, 3000);
 
   document.getElementById('lastScanDiv').style.display = 'block';
   document.getElementById('lastScanUrl').textContent = url;
 
-  if (links.find(l => l.url === url)) { showToast('Link já salvo!', 'info'); return; }
+  if (links.find(l => l.url === url)) {
+    showToast('Link já salvo!', 'info');
+    return;
+  }
+
   links.unshift({ id: Date.now(), url, ts: Date.now() });
-  saveLinks();
+  persist();
   showToast('✓ Link salvo!', 'success');
-  setStatus('✅ Link capturado!');
-  // Flash verde
-  const wrap = document.getElementById('scannerWrap');
-  wrap.style.boxShadow = '0 0 0 4px #00dc96';
-  setTimeout(() => { wrap.style.boxShadow = ''; setStatus('🔍 Aponte para o QR Code...'); }, 1200);
+  setStatus('✅ Capturado! Pode apontar para outro QR...');
+
+  const w = document.getElementById('reader-wrap');
+  w.style.boxShadow = '0 0 0 4px #00dc96';
+  setTimeout(() => w.style.boxShadow = '', 1000);
 }
 
-// ── Actions ──────────────────────────────────────────────
-function deleteLink(id) { links = links.filter(l => l.id !== id); saveLinks(); showToast('Removido', 'info'); }
-function clearAll() { if (!confirm('Apagar todos os links?')) return; links = []; saveLinks(); showToast('Lista limpa', 'info'); }
+// ── Helpers ───────────────────────────────────────────────
+function setStatus(msg) { document.getElementById('statusMsg').textContent = msg; }
+function setPlaceholder(msg, err) {
+  document.getElementById('placeholderMsg').innerHTML = msg;
+  document.getElementById('placeholderMsg').style.color = err ? 'var(--danger)' : 'var(--muted)';
+  document.getElementById('placeholderBox').style.display = 'flex';
+}
+function delLink(id) { links = links.filter(l => l.id !== id); persist(); showToast('Removido','info'); }
+function clearAll() {
+  if (!confirm('Apagar todos os ' + links.length + ' links?')) return;
+  links = []; persist(); showToast('Lista limpa','info');
+}
 function copyLink(url, btn) {
-  navigator.clipboard.writeText(url).then(() => { btn.textContent = '✓ Copiado'; setTimeout(() => btn.innerHTML = '📋 Copiar', 1500); })
-    .catch(() => showToast('Erro ao copiar', 'error'));
+  navigator.clipboard.writeText(url)
+    .then(() => { btn.textContent = '✓ Copiado'; setTimeout(() => btn.innerHTML = '📋 Copiar', 1500); })
+    .catch(() => showToast('Erro ao copiar','error'));
 }
 function exportLinks() {
-  if (!links.length) return;
-  const text = links.map((l,i) => `${i+1}. ${l.url}  [${formatDate(l.ts)}]`).join('\n');
+  const text = links.map((l,i) => `${i+1}. ${l.url}  [${fmt(l.ts)}]`).join('\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+  a.href = URL.createObjectURL(new Blob([text],{type:'text/plain'}));
   a.download = 'meus-links.txt'; a.click();
-  showToast('Lista exportada!', 'success');
+  showToast('Exportado!','success');
 }
-
-// ── Toast ─────────────────────────────────────────────────
-let toastTimer;
+let toastT;
 function showToast(msg, type='success') {
   const el = document.getElementById('toastEl');
   el.textContent = msg; el.className = 'toast toast-'+type; el.style.display = 'block';
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.style.display = 'none', 2500);
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.style.display = 'none', 2500);
 }
 
-loadLinks();
+load();
 </script>
 </body>
 </html>
